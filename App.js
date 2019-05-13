@@ -11,7 +11,7 @@ const { Value } = Animated;
 
 const AnimLine = Animated.createAnimatedComponent(Line);
 
-const stateReduser = (state, action) => {
+const stateReducer = (state, action) => {
   switch (action.type) {
     case 'NEW_LINE':
       return {
@@ -24,7 +24,7 @@ const stateReduser = (state, action) => {
 };
 
 const App = () => {
-  const [drawState, dispatch] = useReducer(stateReduser, { lines: [] });
+  const [drawState, dispatch] = useReducer(stateReducer, { lines: [] });
   const currentTouch = useRef({
     translationX: new Value(0),
     translationY: new Value(0),
