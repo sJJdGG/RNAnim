@@ -77,7 +77,8 @@ const App = () => {
   };
 
   Animated.useCode(
-    block([set(x1, sub(x2, translationX)), set(y1, sub(y2, translationY))], [])
+    block([set(x1, sub(x2, translationX)), set(y1, sub(y2, translationY))]),
+    []
   );
 
   useEffect(() => {
