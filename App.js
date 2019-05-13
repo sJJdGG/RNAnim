@@ -1,13 +1,74 @@
 import React, { useCallback, useRef, useEffect, useReducer } from 'react';
+import { View, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
-
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+
+import MessageQueue from 'react-native/Libraries/BatchedBridge/MessageQueue';
 
 import Svg, { Line } from 'react-native-svg';
 
-const { sub, set, event, block } = Animated;
+const tmp = {
+  fromJSToNative: {},
+  fromNativeToJS: {},
+};
 
-const { Value } = Animated;
+MessageQueue.spy(data => {
+  if (data.type === 1) {
+    const { fromJSToNative } = tmp;
+    const { module } = data;
+    if (fromJSToNative[module]) {
+      fromJSToNative[module] += 1;
+    } else {
+      fromJSToNative[module] = 1;
+    }
+  } else {
+    const { fromNativeToJS } = tmp;
+    const { module } = data;
+    if (fromNativeToJS[module]) {
+      fromNativeToJS[module] += 1;
+    } else {
+      fromNativeToJS[module] = 1;
+    }
+  }
+  console.log(tmp);
+});
+
+const { sub, set, event, block, cond, Value } = Animated;
+
+const Temp = () => {
+  const handleState = useRef({
+    state: new Value(),
+    oldState: new Value(),
+    translationX: new Value(0),
+    translationY: new Value(0),
+    x2: new Value(0),
+    y2: new Value(0),
+  });
+
+  const {
+    x2,
+    y2,
+    state,
+    oldState,
+    translationX,
+    translationY,
+  } = handleState.current;
+
+  const handleStateChane = useCallback(
+    event([
+      {
+        nativeEvent: {
+          state,
+          oldState,
+          translationX,
+          translationY,
+          x2,
+          y2,
+        },
+      },
+    ])
+  );
+};
 
 const AnimLine = Animated.createAnimatedComponent(Line);
 
@@ -23,13 +84,11 @@ const stateReducer = (state, action) => {
   }
 };
 
-const App = () => {
-  const [drawState, dispatch] = useReducer(stateReducer, { lines: [] });
+const Drawer = React.memo(({ dispatch }) => {
+  console.log('rendered!!!');
   const currentTouch = useRef({
     translationX: new Value(0),
     translationY: new Value(0),
-    x1: new Value(0),
-    y1: new Value(0),
     x2: new Value(0),
     y2: new Value(0),
   });
@@ -68,57 +127,76 @@ const App = () => {
       };
 
       // Resetting the drawer to default
-      Object.keys(currentTouch.current).forEach(valueNodeName =>
-        currentTouch.current[valueNodeName].setValue(0)
-      );
+      // Object.keys(currentTouch.current).forEach(valueNodeName =>
+      //   currentTouch.current[valueNodeName].setValue(0)
+      // );
 
       dispatch({ type: 'NEW_LINE', payload: newPath });
     }
   };
 
-  Animated.useCode(
-    block([set(x1, sub(x2, translationX)), set(y1, sub(y2, translationY))]),
-    []
-  );
-
   useEffect(() => {
     // console.warn(StatusBar.currentHeight);
   });
-
   return (
     <PanGestureHandler
       onGestureEvent={onGestureEvent}
       onHandlerStateChange={onHandlerStateChange}
     >
-      <Animated.View>
+      <Animated.View style={{ ...StyleSheet.absoluteFillObject }}>
         <Svg
           width="100%"
           height="100%"
           style={{
-            backgroundColor: 'grey',
-            flex: 1,
+            backgroundColor: 'transparent',
           }}
         >
           <AnimLine
-            x1={x1}
-            y1={y1}
+            x1={sub(x2, translationX)}
+            y1={sub(y2, translationY)}
             x2={x2}
             y2={y2}
             stroke="red"
             strokeWidth="8"
             key="0"
           />
-          {drawState.lines.map(line => (
-            <Line
-              {...line}
-              stroke="red"
-              strokeWidth="8"
-              style={{ borderColor: 'blue', borderWidth: 5 }}
-            />
-          ))}
         </Svg>
       </Animated.View>
     </PanGestureHandler>
+  );
+});
+
+const Plot = ({ linesState }) => {
+  console.log(linesState);
+
+  return (
+    <Svg
+      width="100%"
+      height="100%"
+      style={{
+        flex: 1,
+        backgroundColor: 'transparent',
+      }}
+    >
+      {linesState.lines.map(line => (
+        <Line
+          {...line}
+          stroke="red"
+          strokeWidth="8"
+          style={{ borderColor: 'blue', borderWidth: 5 }}
+        />
+      ))}
+    </Svg>
+  );
+};
+
+const App = () => {
+  const [linesState, dispatch] = useReducer(stateReducer, { lines: [] });
+  return (
+    <View style={{ flex: 1, width: '100%' }}>
+      <Plot linesState={linesState} />
+      <Drawer dispatch={dispatch} />
+    </View>
   );
 };
 
