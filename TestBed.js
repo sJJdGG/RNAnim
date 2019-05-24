@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { View, StatusBar } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-import MessageQueue from 'react-native/Libraries/BatchedBridge/MessageQueue';
+// import MessageQueue from 'react-native/Libraries/BatchedBridge/MessageQueue';
 
 StatusBar.setTranslucent(true);
 StatusBar.setHidden(true);
@@ -12,26 +12,26 @@ const tx = {
   fromNativeToJS: {},
 };
 
-MessageQueue.spy(data => {
-  if (data.type === 1) {
-    const { fromJSToNative } = tx;
-    const { module } = data;
-    if (fromJSToNative[module]) {
-      fromJSToNative[module] += 1;
-    } else {
-      fromJSToNative[module] = 1;
-    }
-  } else {
-    const { fromNativeToJS } = tx;
-    const { module } = data;
-    if (fromNativeToJS[module]) {
-      fromNativeToJS[module] += 1;
-    } else {
-      fromNativeToJS[module] = 1;
-    }
-  }
-  console.log(tx);
-});
+// MessageQueue.spy(data => {
+//   if (data.type === 1) {
+//     const { fromJSToNative } = tx;
+//     const { module } = data;
+//     if (fromJSToNative[module]) {
+//       fromJSToNative[module] += 1;
+//     } else {
+//       fromJSToNative[module] = 1;
+//     }
+//   } else {
+//     const { fromNativeToJS } = tx;
+//     const { module } = data;
+//     if (fromNativeToJS[module]) {
+//       fromNativeToJS[module] += 1;
+//     } else {
+//       fromNativeToJS[module] = 1;
+//     }
+//   }
+//   console.log(tx);
+// });
 
 const { Value, event, block, eq, set, add, cond, call, sub } = Animated;
 
@@ -98,21 +98,33 @@ const shouldBeLocked = gestureData => {
   }
 };
 
-const _transX = cond(locked, sub(lockedXPos, 50), [
+const _transX = cond(
+  locked,
+  cond(
+    eq(gestureState, State.ACTIVE),
+    sub(lockedXPos, 50),
+    set(offsetX, sub(lockedXPos, 50))
+  ),
   cond(
     eq(gestureState, State.ACTIVE),
     add(offsetX, transX),
     set(offsetX, add(offsetX, transX))
-  ),
-]);
+  )
+);
 
-const _transY = cond(locked, sub(lockedYPos, 50), [
+const _transY = cond(
+  locked,
+  cond(
+    eq(gestureState, State.ACTIVE),
+    sub(lockedYPos, 50),
+    set(offsetY, sub(lockedYPos, 50))
+  ),
   cond(
     eq(gestureState, State.ACTIVE),
     add(offsetY, transY),
     set(offsetY, add(offsetY, transY))
-  ),
-]);
+  )
+);
 
 const onGestureEvent = event([
   {
